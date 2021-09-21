@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MPL-2.0
+
+[package]
+name = "moving-least-squares"
+version = "0.1.0"
+authors = [
+    "Matthieu Pizenberg <matthieu.pizenberg@gmail.com>",
+]
+edition = "2018"
+description = "Image deformation using moving least squares"
+readme = "README.md"
+repository = "https://github.com/mpizenberg/moving-least-squares"
+license = "MPL-2.0"
+keywords = ["image", "deformation", "elastic", "mls"]
+categories = ["algorithms", "graphics", "computer-vision"]
+include = ["Cargo.toml", "LICENSE", "README.md", "src/**", "tests/**", "examples/**", "benches/**"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

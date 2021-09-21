@@ -4,6 +4,7 @@
 
 #![warn(missing_docs)]
 
+use core::iter::Sum;
 use core::ops::{Add, Mul, Sub};
 
 /// Move a given point from its original position to its new position
@@ -40,7 +41,7 @@ fn deform_affine(
         .iter()
         .zip(controls_p)
         .map(|(&w, &p)| w * Point::from(p))
-        .fold(Point::zero(), |wp_sum, wp| wp_sum + wp);
+        .sum();
     let p_star = (1.0 / w_sum) * wp_star_sum;
 
     // Compute the centroid q*.
@@ -48,7 +49,7 @@ fn deform_affine(
         .iter()
         .zip(controls_q)
         .map(|(&w, &q)| w * Point::from(q))
-        .fold(Point::zero(), |wq_sum, wq| wq_sum + wq);
+        .sum();
     let q_star = (1.0 / w_sum) * wq_star_sum;
 
     // Compute the affine matrix M.
@@ -61,7 +62,7 @@ fn deform_affine(
         .iter()
         .zip(&p_hat)
         .map(|(&w, &p)| w * p.times_transpose(p))
-        .fold(Mat2::zero(), |mp_sum, wpp| mp_sum + wpp);
+        .sum();
     // Compute the second part of M.
     let mq: Mat2 = w_all
         .iter()
@@ -71,7 +72,7 @@ fn deform_affine(
             let qh = Point::from(q) - q_star;
             (w * ph).times_transpose(qh)
         })
-        .fold(Mat2::zero(), |mq_sum, pq| mq_sum + pq);
+        .sum();
     // Compute actual coefficients of M.
     let m = mp.inv() * mq;
 
@@ -157,6 +158,13 @@ impl Mul<Point> for f32 {
     }
 }
 
+// Sum an iterator of points
+impl Sum for Point {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |s, p| s + p)
+    }
+}
+
 // 2x2 matrix helper ###########################################################
 // That's to avoid a dependency on a heavy package such as nalgebra
 
@@ -164,6 +172,7 @@ impl Mul<Point> for f32 {
 ///
 /// | m11  m12 |
 /// | m21  m22 |
+#[derive(Clone, Copy)]
 struct Mat2 {
     m11: f32,
     m21: f32,
@@ -235,5 +244,12 @@ impl Mul for Mat2 {
             m12: self.m11 * rhs.m12 + self.m12 * rhs.m22,
             m22: self.m21 * rhs.m12 + self.m22 * rhs.m22,
         }
+    }
+}
+
+// Sum an iterator of matrices
+impl Sum for Mat2 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |s, m| s + m)
     }
 }

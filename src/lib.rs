@@ -18,15 +18,12 @@ fn deform_affine(
     proximity_threshold: f32,  // if v is too close to a control point p, we return its associated q
 ) -> (f32, f32) {
     let v = Point::from(point);
-    let sqr_dist_ = |p: Point| (p - v).sqr_norm();
-    let vx = point.0;
-    let vy = point.1;
-    let sqr_dist = |&(x, y): &(f32, f32)| (x - vx).powi(2) + (y - vy).powi(2);
+    let sqr_dist = |p: Point| (p - v).sqr_norm();
 
     // The weight of a given control point depends on its distance to the current point.
     // CAREFUL: this w can go to infinity.
     let weight = |pt| 1.0 / sqr_dist(pt);
-    let w_all: Vec<_> = controls_p.iter().map(weight).collect();
+    let w_all: Vec<_> = controls_p.iter().map(|&p| weight(p.into())).collect();
     let w_sum: f32 = w_all.iter().sum();
     if w_sum.is_infinite() {
         // Most probably, at least one of the weights is infinite,
@@ -38,58 +35,45 @@ fn deform_affine(
         return controls_q[index];
     }
 
-    // Compute the centroids p* and q*.
-    let (wpx_star, wpy_star): (f32, f32) = w_all
+    // Compute the centroid p*.
+    let wp_star_sum: Point = w_all
         .iter()
         .zip(controls_p)
-        .map(|(w, (px, py))| (w * px, w * py))
-        .fold((0.0, 0.0), |(sx, sy), (wpx, wpy)| (sx + wpx, sy + wpy));
-    let (px_star, py_star) = (wpx_star / w_sum, wpy_star / w_sum);
+        .map(|(&w, &p)| w * Point::from(p))
+        .fold(Point::zero(), |wp_sum, wp| wp_sum + wp);
+    let p_star = (1.0 / w_sum) * wp_star_sum;
 
-    let (wqx_star, wqy_star): (f32, f32) = w_all
+    // Compute the centroid q*.
+    let wq_star_sum: Point = w_all
         .iter()
         .zip(controls_q)
-        .map(|(w, (qx, qy))| (w * qx, w * qy))
-        .fold((0.0, 0.0), |(sx, sy), (wqx, wqy)| (sx + wqx, sy + wqy));
-    let (qx_star, qy_star) = (wqx_star / w_sum, wqy_star / w_sum);
+        .map(|(&w, &q)| w * Point::from(q))
+        .fold(Point::zero(), |wq_sum, wq| wq_sum + wq);
+    let q_star = (1.0 / w_sum) * wq_star_sum;
 
     // Compute the affine matrix M.
-    let p_hat: Vec<_> = controls_p
+    let p_hat: Vec<Point> = controls_p
         .iter()
-        .map(|(px, py)| (px - px_star, py - py_star))
+        .map(|&p| Point::from(p) - p_star)
         .collect();
-    // m_p_hat is a 2x2 matrix stored in 4-tuple in column order.
-    // actually 3-tuple since the matrix is symmetric.
-    let (mp_xx, mp_xy, mp_yy): (f32, f32, f32) = w_all
+    // m_p_hat is a 2x2 matrix.
+    let mp: Mat2 = w_all
         .iter()
         .zip(&p_hat)
-        .map(|(w, (px, py))| (w * px * px, w * px * py, w * py * py))
-        .fold((0.0, 0.0, 0.0), |(s1, s2, s4), (pxx, pxy, pyy)| {
-            (s1 + pxx, s2 + pxy, s4 + pyy)
-        });
-    // Inverse that 2x2 matrix first part of M.
-    let det_coef = 1.0 / (mp_xx * mp_yy - mp_xy * mp_xy);
-    let mp_inv_xx = det_coef * mp_yy;
-    let mp_inv_xy = det_coef * -mp_xy;
-    let mp_inv_yy = det_coef * mp_xx;
+        .map(|(&w, &p)| w * p.times_transpose(p))
+        .fold(Mat2::zero(), |mp_sum, wpp| mp_sum + wpp);
     // Compute the second part of M.
-    let (mq_xx, mq_yx, mq_xy, mq_yy): (f32, f32, f32, f32) = w_all
+    let mq: Mat2 = w_all
         .iter()
         .zip(&p_hat)
         .zip(controls_q)
-        .map(|((w, (phx, phy)), (qx, qy))| {
-            let (qhx, qhy) = (qx - qx_star, qy - qy_star);
-            (w * phx * qhx, w * phy * qhx, w * phx * qhy, w * phy * qhy)
+        .map(|((&w, &ph), &q)| {
+            let qh = Point::from(q) - q_star;
+            (w * ph).times_transpose(qh)
         })
-        .fold(
-            (0.0, 0.0, 0.0, 0.0),
-            |(s1, s2, s3, s4), (qxx, qyx, qxy, qyy)| (s1 + qxx, s2 + qyx, s3 + qxy, s4 + qyy),
-        );
+        .fold(Mat2::zero(), |mq_sum, pq| mq_sum + pq);
     // Compute actual coefficients of M.
-    let m_xx = mp_inv_xx * mq_xx + mp_inv_xy * mq_yx;
-    let m_yx = mp_inv_xy * mq_xx + mp_inv_yy * mq_yx;
-    let m_xy = mp_inv_xx * mq_xy + mp_inv_xy * mq_yy;
-    let m_yy = mp_inv_xy * mq_xy + mp_inv_yy * mq_yy;
+    let m = mp.inv() * mq;
 
     // Finally compute the projection of our original point.
     let vx_star: f32;
@@ -107,6 +91,11 @@ struct Point {
 }
 
 impl Point {
+    /// 0
+    fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+
     /// Dot product with another point.
     fn dot(self, rhs: Self) -> f32 {
         self.x * rhs.x + self.y * rhs.y
@@ -115,6 +104,16 @@ impl Point {
     /// Square norm.
     fn sqr_norm(self) -> f32 {
         self.x * self.x + self.y * self.y
+    }
+
+    /// Create a 2x2 matrix from a 2x1 point
+    fn times_transpose(self, rhs: Self) -> Mat2 {
+        Mat2 {
+            m11: self.x * rhs.x,
+            m21: self.y * rhs.x,
+            m12: self.x * rhs.y,
+            m22: self.y * rhs.y,
+        }
     }
 }
 
@@ -127,9 +126,9 @@ impl From<(f32, f32)> for Point {
 
 // Add two points
 impl Add for Point {
-    type Output = Point;
+    type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        Point {
+        Self {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
         }
@@ -138,9 +137,9 @@ impl Add for Point {
 
 // Substract a point
 impl Sub for Point {
-    type Output = Point;
+    type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
-        Point {
+        Self {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
@@ -170,4 +169,71 @@ struct Mat2 {
     m21: f32,
     m12: f32,
     m22: f32,
+}
+
+impl Mat2 {
+    /// 0
+    fn zero() -> Self {
+        Self {
+            m11: 0.0,
+            m21: 0.0,
+            m12: 0.0,
+            m22: 0.0,
+        }
+    }
+
+    /// Determinant
+    fn det(self) -> f32 {
+        self.m11 * self.m22 - self.m21 * self.m12
+    }
+
+    /// Inverse of a matrix (does not check if det is 0)
+    fn inv(self) -> Self {
+        1.0 / self.det()
+            * Self {
+                m11: self.m22,
+                m21: -self.m21,
+                m12: -self.m12,
+                m22: self.m11,
+            }
+    }
+}
+
+// Add two matrices
+impl Add for Mat2 {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            m11: self.m11 + rhs.m11,
+            m21: self.m21 + rhs.m21,
+            m12: self.m12 + rhs.m12,
+            m22: self.m22 + rhs.m22,
+        }
+    }
+}
+
+// Scalar multiplication
+impl Mul<Mat2> for f32 {
+    type Output = Mat2;
+    fn mul(self, rhs: Mat2) -> Self::Output {
+        Mat2 {
+            m11: self * rhs.m11,
+            m21: self * rhs.m21,
+            m12: self * rhs.m12,
+            m22: self * rhs.m22,
+        }
+    }
+}
+
+// Matrix multiplication
+impl Mul for Mat2 {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self::Output {
+        Mat2 {
+            m11: self.m11 * rhs.m11 + self.m12 * rhs.m21,
+            m21: self.m21 * rhs.m11 + self.m22 * rhs.m21,
+            m12: self.m11 * rhs.m12 + self.m12 * rhs.m22,
+            m22: self.m21 * rhs.m12 + self.m22 * rhs.m22,
+        }
+    }
 }

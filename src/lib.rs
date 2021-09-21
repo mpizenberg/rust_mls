@@ -12,7 +12,7 @@ use core::ops::{Add, Mul, Sub};
 /// into their displaced locations.
 ///
 /// The estimated transformation is an affine 2d transformation.
-fn deform_affine(
+pub fn deform_affine(
     controls_p: &[(f32, f32)], // p in the paper
     controls_q: &[(f32, f32)], // q in the paper
     point: (f32, f32),         // v in the paper
@@ -57,7 +57,7 @@ fn deform_affine(
         .iter()
         .map(|&p| Point::from(p) - p_star)
         .collect();
-    // m_p_hat is a 2x2 matrix.
+    // mp is a 2x2 matrix.
     let mp: Mat2 = w_all
         .iter()
         .zip(&p_hat)
@@ -73,12 +73,9 @@ fn deform_affine(
             (w * ph).times_transpose(qh)
         })
         .sum();
-    // Compute actual coefficients of M.
-    let m = mp.inv() * mq;
 
     // Finally compute the projection of our original point.
-    let vx_star: f32;
-    todo!()
+    ((v - p_star).transpose_mul(mp.inv()).transpose_mul(mq) + q_star).into()
 }
 
 // 2D points helper ############################################################
@@ -116,12 +113,28 @@ impl Point {
             m22: self.y * rhs.y,
         }
     }
+
+    /// Multiply with a Mat2 on the right.
+    /// Returns a Point even though it should be a line vector (no big deal).
+    fn transpose_mul(self, rhs: Mat2) -> Self {
+        Self {
+            x: rhs.m11 * self.x + rhs.m21 * self.y,
+            y: rhs.m12 * self.x + rhs.m22 * self.y,
+        }
+    }
 }
 
 // Convert from (x,y) to Point { x, y }
 impl From<(f32, f32)> for Point {
     fn from((x, y): (f32, f32)) -> Self {
         Point { x, y }
+    }
+}
+
+// Convert from Point { x, y } to (x,y)
+impl Into<(f32, f32)> for Point {
+    fn into(self) -> (f32, f32) {
+        (self.x, self.y)
     }
 }
 

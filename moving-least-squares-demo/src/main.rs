@@ -11,14 +11,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut img = img.into_rgb8();
 
     // Draw some points.
-    let mut draw = |x, y| draw_point((x, y), 5.0, (255, 0, 0), &mut img);
-    draw(40.0, 160.0);
-    draw(170.0, 160.0);
-    draw(320.0, 160.0);
-    draw(130.0, 280.0);
-    draw(220.0, 280.0);
-    draw(117.0, 369.0);
-    draw(250.0, 369.0);
+    let red: (u8, u8, u8) = (255, 0, 0);
+    let mut draw = |x, y, c| draw_point((x, y), 5.0, c, &mut img);
+    draw(40.0, 160.0, red); // top line
+    draw(170.0, 160.0, red);
+    draw(320.0, 160.0, red);
+    draw(130.0, 280.0, red); // middle line
+    draw(220.0, 280.0, red);
+    draw(117.0, 369.0, red); // bottom line
+    draw(250.0, 369.0, red);
 
     // Create a window with default options and display the image.
     let window = create_window("image", Default::default())?;

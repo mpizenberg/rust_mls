@@ -2,5 +2,6 @@
 resolver = "2"
 members = [
   "moving-least-squares",
+  "moving-least-squares-image",
   "moving-least-squares-demo",
 ]

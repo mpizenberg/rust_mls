@@ -1,13 +1,12 @@
-use image::{GenericImageView, Pixel, RgbImage};
+use image::{Pixel, RgbImage};
 use show_image::create_window;
 
-use moving_least_squares as mls;
+use moving_least_squares_image as mls_image;
 
 #[show_image::main]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Open an image from disk.
     let img = image::open("data/woody.jpg")?;
-    let (width, height) = img.dimensions();
 
     // Convert image into RGB.
     let mut img = img.into_rgb8();
@@ -41,19 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|&p| draw_point(p, 5.0, red, &mut img));
 
     // Create new warped image.
-    let warped_img = RgbImage::from_fn(width, height, |x, y| {
-        let (x2, y2) = mls::deform_affine(controls_dst, controls_src, (x as f32, y as f32), 1e-10);
-        // nearest neighbor appoximation for now.
-        let u = x2.round() as i32;
-        let v = y2.round() as i32;
-        let u_inside = u >= 0 && u < width as i32;
-        let v_inside = v >= 0 && v < height as i32;
-        if u_inside && v_inside {
-            img.get_pixel(u as u32, v as u32).clone()
-        } else {
-            image::Rgb([0, 0, 0])
-        }
-    });
+    let warped_img = mls_image::affine_reverse_dense(&img, controls_src, controls_dst);
 
     // Create a window with default options and display the image.
     let window = create_window("image", Default::default())?;

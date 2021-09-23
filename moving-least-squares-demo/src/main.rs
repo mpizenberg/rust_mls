@@ -13,9 +13,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Define the source control points.
     let controls_src: &[(f32, f32)] = &[
-        (40.0, 160.0),
+        (20.0, 160.0),
         (170.0, 160.0),
-        (320.0, 160.0),
+        (330.0, 160.0),
         (130.0, 280.0),
         (220.0, 280.0),
         (117.0, 369.0),
@@ -24,9 +24,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Define the destination control points.
     let controls_dst: &[(f32, f32)] = &[
-        (40.0, 190.0),
+        (20.0, 250.0),
         (170.0, 160.0),
-        (370.0, 120.0),
+        (390.0, 50.0),
         (110.0, 280.0),
         (200.0, 280.0),
         (117.0, 369.0),

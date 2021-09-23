@@ -1,13 +1,14 @@
 use image::{Rgb, RgbImage};
 
 use moving_least_squares as mls;
+mod interpolation;
 
 /// Compute the warped image with the affine version of MLS.
 ///
 /// The new image is back projected as if the source and destination
 /// control points were reversed.
 ///
-/// Interpolation is done with nearest neighbor for the time being.
+/// Interpolation is done with bilinear interpolation.
 pub fn affine_reverse_dense(
     img_src: &RgbImage,
     controls_src: &[(f32, f32)],
@@ -17,7 +18,8 @@ pub fn affine_reverse_dense(
     let color_outside = Rgb([0, 0, 0]);
     RgbImage::from_fn(width, height, |x, y| {
         let (x2, y2) = mls::deform_affine(controls_dst, controls_src, (x as f32, y as f32));
-        nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
+        // nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
+        interpolation::bilinear(img_src, x2, y2).unwrap_or(color_outside)
     })
 }
 
@@ -26,7 +28,7 @@ pub fn affine_reverse_dense(
 /// The new image is back projected as if the source and destination
 /// control points were reversed.
 ///
-/// Interpolation is done with nearest neighbor for the time being.
+/// Interpolation is done with bilinear interpolation.
 pub fn similarity_reverse_dense(
     img_src: &RgbImage,
     controls_src: &[(f32, f32)],
@@ -36,7 +38,8 @@ pub fn similarity_reverse_dense(
     let color_outside = Rgb([0, 0, 0]);
     RgbImage::from_fn(width, height, |x, y| {
         let (x2, y2) = mls::deform_similarity(controls_dst, controls_src, (x as f32, y as f32));
-        nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
+        // nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
+        interpolation::bilinear(img_src, x2, y2).unwrap_or(color_outside)
     })
 }
 
@@ -45,7 +48,7 @@ pub fn similarity_reverse_dense(
 /// The new image is back projected as if the source and destination
 /// control points were reversed.
 ///
-/// Interpolation is done with nearest neighbor for the time being.
+/// Interpolation is done with bilinear interpolation.
 pub fn rigid_reverse_dense(
     img_src: &RgbImage,
     controls_src: &[(f32, f32)],
@@ -55,7 +58,8 @@ pub fn rigid_reverse_dense(
     let color_outside = Rgb([0, 0, 0]);
     RgbImage::from_fn(width, height, |x, y| {
         let (x2, y2) = mls::deform_rigid(controls_dst, controls_src, (x as f32, y as f32));
-        nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
+        // nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
+        interpolation::bilinear(img_src, x2, y2).unwrap_or(color_outside)
     })
 }
 

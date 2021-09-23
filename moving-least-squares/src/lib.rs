@@ -76,6 +76,7 @@ pub fn deform_affine(
     // Finally compute the projection of our original point.
     ((v - p_star).transpose_mul(mp.inv()).transpose_mul(mq) + q_star).into()
 }
+
 /// Move a given point from its original position to its new position
 /// according to the deformation that transforms the original control points
 /// into their displaced locations.
@@ -161,6 +162,104 @@ pub fn deform_similarity(
         })
         .sum();
     let m = (1.0 / mu_s) * m;
+
+    // Finally compute the projection of our original point (eq 3).
+    ((v - p_star).transpose_mul(m) + q_star).into()
+}
+
+/// Move a given point from its original position to its new position
+/// according to the deformation that transforms the original control points
+/// into their displaced locations.
+///
+/// The estimated transformation is a 2D rigid deformation.
+pub fn deform_rigid(
+    controls_p: &[(f32, f32)], // p in the paper
+    controls_q: &[(f32, f32)], // q in the paper
+    point: (f32, f32),         // v in the paper
+) -> (f32, f32) {
+    let v = Point::from(point);
+    let sqr_dist = |p: Point| (p - v).sqr_norm();
+
+    // The weight of a given control point depends on its distance to the current point.
+    // CAREFUL: this w can go to infinity.
+    let weight = |pt| 1.0 / sqr_dist(pt);
+    let w_all: Vec<_> = controls_p.iter().map(|&p| weight(p.into())).collect();
+    let w_sum: f32 = w_all.iter().sum();
+    if w_sum.is_infinite() {
+        // Most probably, at least one of the weights is infinite,
+        // because our point basically coincide with a control point.
+        let index = w_all
+            .iter()
+            .position(|w| w.is_infinite())
+            .expect("There is an infinite sum of the weights but none is infinite");
+        return controls_q[index];
+    }
+
+    // Compute the centroid p*.
+    let wp_star_sum: Point = w_all
+        .iter()
+        .zip(controls_p)
+        .map(|(&w, &p)| w * Point::from(p))
+        .sum();
+    let p_star = (1.0 / w_sum) * wp_star_sum;
+
+    // Compute the centroid q*.
+    let wq_star_sum: Point = w_all
+        .iter()
+        .zip(controls_q)
+        .map(|(&w, &q)| w * Point::from(q))
+        .sum();
+    let q_star = (1.0 / w_sum) * wq_star_sum;
+
+    // Compute p_hat.
+    let p_hat: Vec<Point> = controls_p
+        .iter()
+        .map(|&p| Point::from(p) - p_star)
+        .collect();
+
+    // Compute q_hat.
+    let q_hat: Vec<Point> = controls_q
+        .iter()
+        .map(|&q| Point::from(q) - q_star)
+        .collect();
+
+    // Compute mu_r.
+    let mu_r_vec: Point = w_all
+        .iter()
+        .zip(&p_hat)
+        .zip(&q_hat)
+        .map(|((&wi, pi), qi)| {
+            let pi_perp = Point { x: -pi.y, y: pi.x };
+            Point {
+                x: wi * qi.dot(*pi),
+                y: wi * qi.dot(pi_perp),
+            }
+        })
+        .sum();
+    let mu_r = mu_r_vec.sqr_norm().sqrt();
+
+    // Compute M (eq 6)
+    let m: Mat2 = w_all
+        .iter()
+        .zip(&p_hat)
+        .zip(&q_hat)
+        .map(|((&wi, pi), qi)| {
+            let p_mat = Mat2 {
+                m11: pi.x,
+                m12: pi.y,
+                m21: pi.y,
+                m22: -pi.x,
+            };
+            let q_mat = Mat2 {
+                m11: qi.x,
+                m21: qi.y,
+                m12: qi.y,
+                m22: -qi.x,
+            };
+            wi * p_mat * q_mat
+        })
+        .sum();
+    let m = (1.0 / mu_r) * m;
 
     // Finally compute the projection of our original point (eq 3).
     ((v - p_star).transpose_mul(m) + q_star).into()

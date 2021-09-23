@@ -40,18 +40,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|&p| draw_point(p, 5.0, red, &mut img));
 
     // Create new warped image.
-    let warped_img = mls_image::affine_reverse_dense(&img, controls_src, controls_dst);
+    let warped_img_affine = mls_image::affine_reverse_dense(&img, controls_src, controls_dst);
+    let warped_img_similarity =
+        mls_image::similarity_reverse_dense(&img, controls_src, controls_dst);
 
     // Create a window with default options and display the image.
     let window = create_window("image", Default::default())?;
     window.set_image("woody", img)?;
 
     // Display new warped image in a new window.
-    let warped_window = create_window("warped image", Default::default())?;
-    warped_window.set_image("woody_warped", warped_img)?;
+    let warped_window_affine = create_window("warped image (affine)", Default::default())?;
+    warped_window_affine.set_image("woody_warped_affine", warped_img_affine)?;
+
+    // Display new warped image in a new window.
+    let warped_window_similarity = create_window("warped image (similarity)", Default::default())?;
+    warped_window_similarity.set_image("woody_warped_similarity", warped_img_similarity)?;
 
     window.wait_until_destroyed()?;
-    warped_window.wait_until_destroyed()?;
+    warped_window_affine.wait_until_destroyed()?;
+    warped_window_similarity.wait_until_destroyed()?;
     Ok(())
 }
 

@@ -44,6 +44,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let warped_img_similarity =
         mls_image::similarity_reverse_dense(&img, controls_src, controls_dst);
     let warped_img_rigid = mls_image::rigid_reverse_dense(&img, controls_src, controls_dst);
+    let warped_img_rigid_sparse =
+        mls_image::rigid_reverse_sparse(&img, controls_src, controls_dst, 4);
 
     // Create a window with default options and display the image.
     let window = create_window("image", Default::default())?;
@@ -61,10 +63,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let warped_window_rigid = create_window("warped image (rigid)", Default::default())?;
     warped_window_rigid.set_image("woody_warped_rigid", warped_img_rigid)?;
 
+    // Display new warped image in a new window.
+    let warped_window_rigid_sparse =
+        create_window("warped image (rigid_sparse)", Default::default())?;
+    warped_window_rigid_sparse.set_image("woody_warped_rigid_sparse", warped_img_rigid_sparse)?;
+
     window.wait_until_destroyed()?;
     warped_window_affine.wait_until_destroyed()?;
     warped_window_similarity.wait_until_destroyed()?;
     warped_window_rigid.wait_until_destroyed()?;
+    warped_window_rigid_sparse.wait_until_destroyed()?;
     Ok(())
 }
 

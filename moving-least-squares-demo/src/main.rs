@@ -2,6 +2,7 @@ use image::{Pixel, RgbImage};
 use show_image::create_window;
 use std::time::Instant;
 
+use moving_least_squares as mls;
 use moving_least_squares_image as mls_image;
 
 #[show_image::main]
@@ -41,15 +42,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|&p| draw_point(p, 5.0, red, &mut img));
 
     // Create new warped image.
-    let warped_img_affine = mls_image::affine_reverse_dense(&img, controls_src, controls_dst);
+    let warped_img_affine =
+        mls_image::reverse_dense(&img, controls_src, controls_dst, mls::deform_affine);
     let warped_img_similarity =
-        mls_image::similarity_reverse_dense(&img, controls_src, controls_dst);
+        mls_image::reverse_dense(&img, controls_src, controls_dst, mls::deform_similarity);
     let now = Instant::now();
-    let warped_img_rigid = mls_image::rigid_reverse_dense(&img, controls_src, controls_dst);
+    let warped_img_rigid =
+        mls_image::reverse_dense(&img, controls_src, controls_dst, mls::deform_rigid);
     println!("{} ms", now.elapsed().as_millis());
     let now = Instant::now();
     let warped_img_rigid_sparse =
-        mls_image::rigid_reverse_sparse(&img, controls_src, controls_dst, 4);
+        mls_image::reverse_sparse(&img, controls_src, controls_dst, 4, mls::deform_rigid);
     println!("{} ms", now.elapsed().as_millis());
 
     // Create a window with default options and display the image.

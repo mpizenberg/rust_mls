@@ -18,6 +18,7 @@ include = ["Cargo.toml", "LICENSE", "README.md", "src/**", "tests/**", "examples
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+moving-least-squares = { path = "../moving-least-squares" }
 moving-least-squares-image = { path = "../moving-least-squares-image" }
 show-image = { version = "0.9.3", features = ["image"] }
 image = { version = "0.23.14", default-features = false, features = ["jpeg"] }

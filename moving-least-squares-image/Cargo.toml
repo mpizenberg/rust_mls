@@ -18,5 +18,5 @@ categories = ["algorithms", "graphics", "computer-vision"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-moving-least-squares = { path = "../moving-least-squares" }
+moving-least-squares = { version = "0.1.0", path = "../moving-least-squares" }
 image = { version = "0.23.14", default-features = false }

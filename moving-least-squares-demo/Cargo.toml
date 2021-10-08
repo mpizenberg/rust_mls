@@ -9,11 +9,11 @@ authors = [
 edition = "2018"
 description = "Demo of image deformation using moving least squares"
 readme = "README.md"
-repository = "https://github.com/mpizenberg/moving-least-squares"
+repository = "https://github.com/mpizenberg/rust_mls"
+homepage = "https://github.com/mpizenberg/rust_mls"
 license = "MPL-2.0"
 keywords = ["image", "deformation", "elastic", "mls"]
 categories = ["algorithms", "graphics", "computer-vision"]
-include = ["Cargo.toml", "LICENSE", "README.md", "src/**", "tests/**", "examples/**", "benches/**"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

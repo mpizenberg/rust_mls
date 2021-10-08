@@ -319,9 +319,9 @@ impl From<(f32, f32)> for Point {
 }
 
 // Convert from Point { x, y } to (x,y)
-impl Into<(f32, f32)> for Point {
-    fn into(self) -> (f32, f32) {
-        (self.x, self.y)
+impl From<Point> for (f32, f32) {
+    fn from(point: Point) -> (f32, f32) {
+        (point.x, point.y)
     }
 }
 

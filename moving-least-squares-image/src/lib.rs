@@ -11,6 +11,7 @@ mod interpolation;
 /// control points were reversed.
 ///
 /// Interpolation is done with bilinear interpolation.
+#[allow(clippy::type_complexity)]
 pub fn reverse_dense(
     img_src: &RgbImage,
     controls_src: &[(f32, f32)],
@@ -28,6 +29,7 @@ pub fn reverse_dense(
 
 // Sparse interpolation ########################################################
 
+#[allow(clippy::type_complexity)]
 pub fn reverse_sparse(
     img_src: &RgbImage,
     controls_src: &[(f32, f32)],
@@ -115,20 +117,4 @@ fn bilinear_warp(
             / area;
 
     (x, y)
-}
-
-// Helpers #####################################################################
-
-/// Retrieve nearest neighbor pixel for given coordinates.
-fn nearest_neighbor(img: &RgbImage, x: f32, y: f32) -> Option<Rgb<u8>> {
-    let (width, height) = img.dimensions();
-    let u = x.round() as i32;
-    let v = y.round() as i32;
-    let u_inside = u >= 0 && u < width as i32;
-    let v_inside = v >= 0 && v < height as i32;
-    if u_inside && v_inside {
-        Some(img.get_pixel(u as u32, v as u32).clone())
-    } else {
-        None
-    }
 }

@@ -103,7 +103,7 @@ fn draw_point((px, py): (f32, f32), radius: f32, (r, g, b): (u8, u8, u8), img: &
             // blend the pixel with the new color
             let pix = img.get_pixel_mut(x, y);
             pix.channels_mut()
-                .into_iter()
+                .iter_mut()
                 .zip([r, g, b])
                 .for_each(|(p, c)| {
                     *p = (blend_coef * c as f32 + (1.0 - blend_coef) * *p as f32) as u8

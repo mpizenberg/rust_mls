@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 use image::{Pixel, RgbImage};
 use show_image::create_window;
 use std::time::Instant;

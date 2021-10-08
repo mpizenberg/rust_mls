@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: MPL-2.0
+
+//! Functions to compute warped images with an MLS algorithm.
+//! Two warping functions are provided:
+//!  - a dense warp where the deformation is computed for each pixel,
+//!  - a sparse warp where its only computed on a sparse grid,
+//!    and the other pixels locations are interpolated.
+
+#![warn(missing_docs)]
+
 use image::{Rgb, RgbImage};
 
 mod interpolation;
@@ -10,7 +20,9 @@ mod interpolation;
 /// The new image is back projected as if the source and destination
 /// control points were reversed.
 ///
-/// Interpolation is done with bilinear interpolation.
+/// The warp is computed densely, for every pixel.
+///
+/// Pixels interpolation is done with bilinear interpolation.
 #[allow(clippy::type_complexity)]
 pub fn reverse_dense(
     img_src: &RgbImage,
@@ -29,6 +41,21 @@ pub fn reverse_dense(
 
 // Sparse interpolation ########################################################
 
+/// Compute the warped image with an MLS algorithm.
+/// The last argument is the MLS version you choose.
+///
+/// The new image is back projected as if the source and destination
+/// control points were reversed.
+///
+/// Only a sparse grid subset of the pixels are reprojected with the actual MLS function.
+/// The other pixels locations are interpolated bilinearly.
+/// For example, a subresolution factor of 3 means that only 1 in 3 pixels
+/// per row and per column is actually projected with MLS.
+/// In the case of a big number of control points (> 100),
+/// this can produce a significant speedup (roughly 16x for a subresolution factor of 4),
+/// with a minimal impact on the produced image.
+///
+/// Pixels interpolation is done with bilinear interpolation.
 #[allow(clippy::type_complexity)]
 pub fn reverse_sparse(
     img_src: &RgbImage,

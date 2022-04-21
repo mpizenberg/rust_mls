@@ -12,6 +12,31 @@ use image::{Rgb, RgbImage};
 
 mod interpolation;
 
+/// Behaves like `RgbImage::from_fn` but will be parallelized if the `rayon` feature is enabled
+fn rgb_image_from_fn<F>(width: u32, height: u32, f: F) -> RgbImage
+    where F: Fn(u32, u32) -> Rgb<u8> + Send + Sync
+{
+    #[cfg(not(feature = "rayon"))]
+    return RgbImage::from_fn(width, height, f);
+
+    #[cfg(feature = "rayon")]
+    {
+        use rayon::prelude::*;
+
+        let mut buf = RgbImage::new(width, height);
+
+        buf
+            .par_chunks_mut(3)
+            .enumerate()
+            .map(|(idx, pixel)| (idx as u32 % width, idx as u32 / width, pixel))
+            .for_each(|(x, y, pixel)| {
+                pixel.copy_from_slice(&f(x, y).0);
+            });
+
+        buf
+    }
+}
+
 // Dense interpolation #########################################################
 
 /// Compute the warped image with an MLS algorithm.
@@ -32,7 +57,7 @@ pub fn reverse_dense(
 ) -> RgbImage {
     let (width, height) = img_src.dimensions();
     let color_outside = Rgb([0, 0, 0]);
-    RgbImage::from_fn(width, height, |x, y| {
+    rgb_image_from_fn(width, height, |x, y| {
         let (x2, y2) = deform_function(controls_dst, controls_src, (x as f32, y as f32));
         // nearest_neighbor(img_src, x2, y2).unwrap_or(color_outside)
         interpolation::bilinear(img_src, x2, y2).unwrap_or(color_outside)
@@ -85,7 +110,7 @@ pub fn reverse_sparse(
         .collect();
 
     // apply bilinear warp to compute the full warp
-    RgbImage::from_fn(width, height, |x, y| {
+    rgb_image_from_fn(width, height, |x, y| {
         let sub_left = x / subresolution_factor;
         let sub_top = y / subresolution_factor;
         let top_left_corner = (

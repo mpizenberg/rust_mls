@@ -26,7 +26,7 @@ where
 
         let mut buf = RgbImage::new(width, height);
 
-        buf.par_chunks_mut(3)
+        buf.par_chunks_exact_mut(3)
             .enumerate()
             .map(|(idx, pixel)| (idx as u32 % width, idx as u32 / width, pixel))
             .for_each(|(x, y, pixel)| {

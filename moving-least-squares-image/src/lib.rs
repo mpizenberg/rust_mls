@@ -13,28 +13,32 @@ use image::{Rgb, RgbImage};
 mod interpolation;
 
 /// Behaves like `RgbImage::from_fn` but will be parallelized if the `rayon` feature is enabled
+#[cfg(not(feature = "rayon"))]
+fn rgb_image_from_fn<F>(width: u32, height: u32, f: F) -> RgbImage
+where
+    F: Fn(u32, u32) -> Rgb<u8>,
+{
+    RgbImage::from_fn(width, height, f)
+}
+
+/// Behaves like `RgbImage::from_fn` but will be parallelized if the `rayon` feature is enabled
+#[cfg(feature = "rayon")]
 fn rgb_image_from_fn<F>(width: u32, height: u32, f: F) -> RgbImage
 where
     F: Fn(u32, u32) -> Rgb<u8> + Send + Sync,
 {
-    #[cfg(not(feature = "rayon"))]
-    return RgbImage::from_fn(width, height, f);
+    use rayon::prelude::*;
 
-    #[cfg(feature = "rayon")]
-    {
-        use rayon::prelude::*;
+    let mut buf = RgbImage::new(width, height);
 
-        let mut buf = RgbImage::new(width, height);
+    buf.par_chunks_exact_mut(3)
+        .enumerate()
+        .map(|(idx, pixel)| (idx as u32 % width, idx as u32 / width, pixel))
+        .for_each(|(x, y, pixel)| {
+            pixel.copy_from_slice(&f(x, y).0);
+        });
 
-        buf.par_chunks_exact_mut(3)
-            .enumerate()
-            .map(|(idx, pixel)| (idx as u32 % width, idx as u32 / width, pixel))
-            .for_each(|(x, y, pixel)| {
-                pixel.copy_from_slice(&f(x, y).0);
-            });
-
-        buf
-    }
+    buf
 }
 
 // Dense interpolation #########################################################

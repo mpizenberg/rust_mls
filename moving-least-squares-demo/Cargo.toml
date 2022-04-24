@@ -23,3 +23,6 @@ moving-least-squares-image = { path = "../moving-least-squares-image" }
 show-image = { version = "0.9.3", features = ["image"] }
 image = { version = "0.23.14", default-features = false, features = ["jpeg"] }
 # imageproc = { version = "0.22.0", default-features = false }
+
+[features]
+rayon = [ "moving-least-squares-image/rayon" ]

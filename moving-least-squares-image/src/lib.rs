@@ -14,7 +14,8 @@ mod interpolation;
 
 /// Behaves like `RgbImage::from_fn` but will be parallelized if the `rayon` feature is enabled
 fn rgb_image_from_fn<F>(width: u32, height: u32, f: F) -> RgbImage
-    where F: Fn(u32, u32) -> Rgb<u8> + Send + Sync
+where
+    F: Fn(u32, u32) -> Rgb<u8> + Send + Sync,
 {
     #[cfg(not(feature = "rayon"))]
     return RgbImage::from_fn(width, height, f);
@@ -25,8 +26,7 @@ fn rgb_image_from_fn<F>(width: u32, height: u32, f: F) -> RgbImage
 
         let mut buf = RgbImage::new(width, height);
 
-        buf
-            .par_chunks_mut(3)
+        buf.par_chunks_mut(3)
             .enumerate()
             .map(|(idx, pixel)| (idx as u32 % width, idx as u32 / width, pixel))
             .for_each(|(x, y, pixel)| {

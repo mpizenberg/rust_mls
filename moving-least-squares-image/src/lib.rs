@@ -27,7 +27,8 @@ fn rgb_image_from_fn<F>(width: u32, height: u32, f: F) -> RgbImage
 where
     F: Fn(u32, u32) -> Rgb<u8> + Send + Sync,
 {
-    use rayon::prelude::*;
+    use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+    use rayon::slice::ParallelSliceMut;
 
     let mut buf = RgbImage::new(width, height);
 

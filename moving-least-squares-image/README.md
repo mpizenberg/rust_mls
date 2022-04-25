@@ -7,6 +7,8 @@ Rust implementation of the paper ["Image Deformation Using Moving Least Squares"
 [pdf]: https://people.engr.tamu.edu/schaefer/research/mls.pdf
 [img]: https://mpizenberg.github.io/resources/moving-least-squares/mls-demo.jpg
 
+The optional `rayon` feature enables parallel iterators for the generation of the warped image.
+
 Here is what using the library looks like:
 
 ```rust

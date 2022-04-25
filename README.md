@@ -15,6 +15,11 @@ cd moving-least-squares-demo/
 cargo run --release
 ```
 
+The optional `rayon` feature enables parallel iterators for the generation of the warped image.
+```sh
+cargo run --release --features rayon
+```
+
 Here is what using the library looks like:
 
 ```rust
